@@ -19,4 +19,41 @@ describe('Alerts...', () => {
 		cy.get('#buttonNow').click();
 		cy.get('#resultado > span').should('contain', '10/04/2012');
 	})
+
+	it.only('Vai para o futuro', () => {
+		cy.get('#buttonTimePassed').click();
+		cy.get('#resultado > span').should('contain', '1694');
+		cy.get('#resultado > span').invoke('text').then((text) => {
+		  const numberValue = parseInt(text, 10); // Converte o texto em um número
+		  expect(numberValue).to.be.gt(1694701557223); // Compara como número
+		});
+
+		cy.clock();
+		cy.get('#buttonTimePassed').click();
+		cy.get('#resultado > span').invoke('text').then((text) => {
+		  const numberValue = parseInt(text, 10); // Converte o texto em um número
+		  expect(numberValue).to.be.lte(0); // Compara como número
+		});
+		// cy.wait(1000);
+		// cy.get('#buttonTimePassed').click();
+		// cy.get('#resultado > span').invoke('text').then((text) => {
+		//   const numberValue = parseInt(text, 10); // Converte o texto em um número
+		//   expect(numberValue).to.be.lte(1000); // Compara como número
+		// });
+
+		cy.tick(5000);
+		cy.get('#buttonTimePassed').click();
+		cy.get('#resultado > span').invoke('text').then((text) => {
+		  const numberValue = parseInt(text, 10); // Converte o texto em um número
+		  expect(numberValue).to.be.gte(5000); // Compara como número
+		});
+
+		cy.tick(10000);
+		cy.get('#buttonTimePassed').click();
+		cy.get('#resultado > span').invoke('text').then((text) => {
+		  const numberValue = parseInt(text, 10); // Converte o texto em um número
+		  expect(numberValue).to.be.gte(15000); // Compara como número
+		});
+
+	})
 })
