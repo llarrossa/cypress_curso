@@ -18,4 +18,12 @@ describe('iFrames...', () => {
 			expect(msg).to.be.equal('Click OK!');
 		})
 	})
+
+	it.only('Deve forçar abrir o link na mesma páginar', () => {
+		cy.visit('https://www.wcaquino.me/cypress/componentes.html');
+		cy.contains('Popup2')
+			.invoke('removeAttr', 'target')
+			.click();
+		cy.get('#tfield').type('funciona');
+	})
 })
