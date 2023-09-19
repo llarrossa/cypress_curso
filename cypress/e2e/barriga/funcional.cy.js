@@ -40,11 +40,19 @@ describe('Deve testar a nível funcional', () => {
 
 		cy.get(loc.MOVIMENTACAO.DESCRICAO).type('Desc');
 		cy.get(loc.MOVIMENTACAO.VALOR).type('123')
-		cy.get(loc.MOVIMENTACAO.INTERESSADO).type('Inter')
+		cy.get(loc.MOVIMENTACAO.INTERESSADO).type('Inter');
+		cy.get(loc.MOVIMENTACAO.CONTA).select('Conta alterada');
+		cy.get(loc.MOVIMENTACAO.STATUS).click();
 		cy.get(loc.MOVIMENTACAO.BTN_SALVAR).click();
 		cy.get(loc.MESSAGE).should('contain', 'sucesso');
 
 		cy.get(loc.EXTRATO.LINHAS).should('have.length', 7);
 		cy.xpath(loc.EXTRATO.XP_BUSCA_ELEMENTO).should('exist');
+	})
+
+	it('Deve pegar o saldo', () => {
+		cy.get(loc.MENU.HOME).click();
+		cy.xpath(loc.SALDO.FN_XP_SALDO_CONTA('Conta alterada'))
+			.should('contain', '123,00');
 	})
 })
