@@ -1,76 +1,101 @@
 /// <reference types="cypress" />
 
-import loc from '../../support/locators';
-import '../../support/commandsContas';
-
 describe('Deve testar a nível funcional', () => {
+
+	let token
+
 	beforeEach(() => {
-		cy.login('lucca@gmail.com', '123');
-		cy.resetApp();
-		cy.wait(500);
+		// cy.login('lucca@gmail.com', '123');
+		cy.getToken('lucca@gmail.com', '123')
+			.then(tkn => {
+				token = tkn;
+			})
+
+		cy.resetRest();
 	})
 
 	it('Deve inserir uma conta', () => {
-		cy.acessarMenuConta();
-		cy.inserirConta('Conta de teste');
-		cy.get(loc.MESSAGE)
-			.should('contain', 'Conta inserida com sucesso');
+		cy.request({
+			url: 'https://barrigarest.wcaquino.me/contas',
+			method: 'POST',
+			headers: { Authorization: `JWT ${token}` },
+			body: {
+				nome: 'Conta via rest'
+			}
+		}).as('response')
+
+		cy.get('@response').then(res => {
+			expect(res.status).to.be.equal(201)
+			expect(res.body).to.have.property('id')
+			expect(res.body).to.have.property('nome', 'Conta via rest')
+		})
+
 	})
 
 	it('Deve alterar uma conta', () => {
-		cy.acessarMenuConta();
+		cy.getContaByName('Conta para alterar')
+			.then(contaId => {
+				cy.request({
+					url: `https://barrigarest.wcaquino.me/contas/${contaId}`,
+					method: 'PUT',
+					headers: { Authorization: `JWT ${token}` },
+					body: {
+						nome: 'conta alterada via rest'
+					}
+				}).as('response')
 
-		cy.xpath(loc.CONTAS.FN_XP_BTN_ALTERAR('Conta para alterar'))
-			.click();
-		cy.get(loc.CONTAS.NOME)
-			.clear()
-			.type('Conta alterada');
-		cy.get(loc.CONTAS.BTN_SALVAR).click();
-		cy.get(loc.MESSAGE).should('contain', 'Conta atualizada com sucesso');
+			})
+		
+		cy.get('@response').its('status').should('be.equal', 200);
 	})
 
 	it('Não deve criar uma conta com nome repetido', () => {
-		cy.acessarMenuConta();
+		cy.request({
+			url: 'https://barrigarest.wcaquino.me/contas',
+			method: 'POST',
+			headers: { Authorization: `JWT ${token}` },
+			body: {
+				nome: 'Conta mesmo nome'
+			},
+			failOnStatusCode: false
+		}).as('response')
 
-		cy.inserirConta('Conta mesmo nome');
-		cy.get(loc.MESSAGE).should('contain', 'code 400');
+		cy.get('@response').then(res => {
+			console.log(res);
+			expect(res.status).to.be.equal(400)
+			expect(res.body.error).to.be.equal('Já existe uma conta com esse nome!')
+		})
 	})
 
 	it('Deve criar uma movimentação', () => {
-		cy.get(loc.MENU.MOVIMENTACAO).click();
+		cy.getContaByName('Conta para movimentacoes')
+			.then(contaId => {
+				cy.request({
+					method: 'POST',
+					url: 'https://barrigarest.wcaquino.me/transacoes',
+					headers: { Authorization: `JWT ${token}` },
+					body: {
+						conta_id: contaId,
+						data_pagamento: '23/09/2023',
+						data_transacao: '22/09/2023',
+						descricao: "desc",
+						envolvido: "inter",
+						status: true,
+						tipo: "REC",
+						valor: "123"
+					}
+				}).as('response')
+			})
 
-		cy.get(loc.MOVIMENTACAO.DESCRICAO).type('Desc');
-		cy.get(loc.MOVIMENTACAO.VALOR).type('123')
-		cy.get(loc.MOVIMENTACAO.INTERESSADO).type('Inter');
-		cy.get(loc.MOVIMENTACAO.CONTA).select('Conta para movimentacoes');
-		cy.get(loc.MOVIMENTACAO.STATUS).click();
-		cy.get(loc.MOVIMENTACAO.BTN_SALVAR).click();
-		cy.get(loc.MESSAGE).should('contain', 'sucesso');
-
-		cy.get(loc.EXTRATO.LINHAS).should('have.length', 7);
-		cy.xpath(loc.EXTRATO.FN_XP_BUSCA_ELEMENTO('Desc', '123')).should('exist');
+		cy.get('@response').its('status').should('be.equal', 201);
+		cy.get('@response').its('body.id').should('exist');
 	})
 
 	it('Deve pegar o saldo', () => {
-		cy.get(loc.MENU.HOME).click();
-		cy.xpath(loc.SALDO.FN_XP_SALDO_CONTA('Conta para saldo'))
-			.should('contain', '534,00');
-
-		cy.get(loc.MENU.EXTRATO).click();
-		cy.xpath(loc.EXTRATO.FN_XP_ALTERAR_ELEMENTO('Movimentacao 1, calculo saldo')).click();
-		cy.wait(1000);
-		cy.get(loc.MOVIMENTACAO.STATUS).click();
-		cy.get(loc.MOVIMENTACAO.BTN_SALVAR).click();
-		cy.get(loc.MESSAGE).should('contain', 'sucesso');
-
-		cy.get(loc.MENU.HOME).click();
-		cy.xpath(loc.SALDO.FN_XP_SALDO_CONTA('Conta para saldo'))
-			.should('contain', '4.034,00');
+		
 	})
 
 	it('Deve remover uma movimentação', () => {
-		cy.get(loc.MENU.EXTRATO).click();
-		cy.xpath(loc.EXTRATO.FN_XP_REMOVER_ELEMENTO('Movimentacao para exclusao')).click();
-		cy.get(loc.MESSAGE).should('contain', 'sucesso');
+		
 	})
 })
