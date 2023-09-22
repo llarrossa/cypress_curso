@@ -91,8 +91,49 @@ describe('Deve testar a nível funcional', () => {
 		cy.get('@response').its('body.id').should('exist');
 	})
 
-	it('Deve pegar o saldo', () => {
-		
+	it.only('Deve pegar o saldo', () => {
+		cy.request({
+			url: 'https://barrigarest.wcaquino.me/saldo',
+			method: 'GET',
+			headers: { Authorization: `JWT ${token}` },
+		}).then(res => {
+			let saldoConta = null;
+			res.body.forEach(c => {
+				if (c.conta === 'Conta para saldo') saldoConta = c.saldo
+			})
+				expect(saldoConta).to.be.equal('534.00')
+		})
+
+		cy.request({
+			method: 'GET',
+			url: 'https://barrigarest.wcaquino.me/transacoes/',
+			headers: { Authorization: `JWT ${token}` },
+			qs: { descricao: 'Movimentacao 1, calculo saldo' }
+		}).then(res => {
+			console.log(res.body[0])
+			cy.request({
+				url: `https://barrigarest.wcaquino.me/transacoes/${res.body[0].id}`,
+				method: 'PUT',
+				headers: { Authorization: `JWT ${token}` },
+				body: {
+					status: true
+				}
+			}).its('status').should('be.equal', 200);
+		})
+
+		cy.request({
+			url: 'https://barrigarest.wcaquino.me/saldo',
+			method: 'GET',
+			headers: { Authorization: `JWT ${token}` },
+		}).then(res => {
+			let saldoConta = null;
+			res.body.forEach(c => {
+				if (c.conta === 'Conta para saldo') {
+					saldoConta = c.saldo;
+				}		
+			})
+			expect(saldoConta).to.be.equal('52234.00')
+		})
 	})
 
 	it('Deve remover uma movimentação', () => {
